@@ -1,7 +1,13 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'Maven'      // must match Jenkins tool name
+        jdk 'JDK'          // must match Jenkins tool name
+    }
+
     stages {
+
         stage('Clean') {
             steps {
                 echo 'Cleaning...'
@@ -49,6 +55,43 @@ pipeline {
                 echo 'Deploying...'
                 bat 'mvn deploy'
             }
+        }
+    }
+
+    post {
+
+        success {
+            emailext(
+                subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+                Build SUCCESSFUL ✅
+
+                Job: ${env.JOB_NAME}
+                Build Number: ${env.BUILD_NUMBER}
+                Build URL: ${env.BUILD_URL}
+                """,
+                recipientProviders: [developers()]
+            )
+        }
+
+        failure {
+            emailext(
+                subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+                Build FAILED ❌
+
+                Job: ${env.JOB_NAME}
+                Build Number: ${env.BUILD_NUMBER}
+                Build URL: ${env.BUILD_URL}
+
+                Please check the console output.
+                """,
+                recipientProviders: [developers()]
+            )
+        }
+
+        always {
+            echo 'Pipeline finished.'
         }
     }
 }
